@@ -1,55 +1,23 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin')
-
-admin.initializeApp()
-
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-
+const functions = require('firebase-functions')
 const express = require('express')
 const app = express()
 
-app.get('/screams', (req, res) => {
-    admin
-        .firestore()
-        .collection('screams')
-        .orderBy('createAt', 'desc')
-        .get()
-        .then(data => {
-            let screams = []
-            data.forEach(doc => {
-                screams.push({
-                    screamId: doc.id,
-                    body: doc.data().body,
-                    userHandle: doc.data().userHandle,
-                    createAt: doc.data().createAt
-                })
-            })
-            return res.json(screams)
-        })
-        .catch(err => {
-            console.error(err)
-        })
-})
+const { getAllScreams, postOneScream } = require('./handlers/screams')
 
-app.post('/scream', (req, res) => {
-    const newScream = {
-        body: req.body.body,
-        userHandle: req.body.userHandle,
-        createAt: new Date().toISOString()    
-    }
+const { signup, login } = require('./handlers/users')
 
-    admin.firestore()
-        .collection('screams')
-        .add(newScream)
-        .then(doc => {
-            res.json({ message: `document ${doc.id} created successfully!` })
-        })
-        .catch(err => {
-            res.status(500).json({ error: 'something went wrong!' })
-            console.error(err)
-        })
-})  
+const fbAuth = require('./util/fbAuth')
+
+// get screams route
+app.get('/screams', fbAuth, getAllScreams)
+
+// post scream route
+app.post('/scream', fbAuth, postOneScream)  
+
+// signup route
+app.post('/signup', signup)
+
+// login route
+app.post('/login', login)
 
 exports.api = functions.https.onRequest(app)
