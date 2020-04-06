@@ -28,6 +28,9 @@ exports.getAllScreams = (req, res) => {
 
 // post a scream
 exports.postOneScream = (req, res) => {
+    if (req.body.body.trim() === '') {
+        return res.status(400).json({ body: 'body must not be empty' })
+    }
     const newScream = {
         body: req.body.body,
         userHandle: req.user.handle,
@@ -153,11 +156,23 @@ exports.likeScream = (req, res) => {
                         return screamDocument.update({ likeCount: screamData.likeCount })
                     })
                     .then(() => {
-                        return res.json(screamData)
+                        // return res.json(screamData)
+                        return db
+                            .collection('comments')
+                            .orderBy('createAt', 'desc')
+                            .where('screamId', '==', req.params.screamId)
+                            .get()
                     })
             } else {
                 return res.status(400).json({ error: 'scream already liked' })
             }
+        })
+        .then(data => {
+            screamData.comments = []
+            data.forEach(doc => {
+                screamData.comments.push(doc.data())
+            })  
+            return res.json(screamData)
         })
         .catch(err => {
             console.error(err)
@@ -200,9 +215,21 @@ exports.unlikeScream = (req, res) => {
                         return screamDocument.update({ likeCount: screamData.likeCount })
                     })
                     .then(() => {
-                        res.json(screamData)
+                        // res.json(screamData)
+                        return db
+                            .collection('comments')
+                            .orderBy('createAt', 'desc')
+                            .where('screamId', '==', req.params.screamId)
+                            .get()
                     })
             }
+        })
+        .then(data => {
+            screamData.comments = []
+            data.forEach(doc => {
+                screamData.comments.push(doc.data())
+            })  
+            return res.json(screamData)
         })
         .catch(err => {
             console.error(err)
